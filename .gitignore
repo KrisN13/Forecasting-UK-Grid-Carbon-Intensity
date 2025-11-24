@@ -1,0 +1,8 @@
+.ipynb_checkpoints/
+# Raw data
+data/raw/
+# Sampled Datasets
+data/samples/
+# Project Notes
+notes/
+*.tmp
