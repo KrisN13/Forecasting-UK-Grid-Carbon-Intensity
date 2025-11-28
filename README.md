@@ -17,7 +17,7 @@ Pipeline:
 ### Structural insight: decarbonisation compresses the benefit of load shifting
 
 The analysis shows that domestic load shifting delivers modest but consistent
-CO₂ savings: ≈**1.6%** on an average day, and up to **≈5%** on the best days.
+CO₂ savings: ≈**1.6%** on an average day, and up to **5%** on the best days.
 The key reason is structural rather than methodological:
 
 - In the modern UK grid (2020–2025), **renewables dominate low-carbon periods**  
@@ -39,9 +39,9 @@ On some days:
 - The household load profile is out of phase with clean periods  
 
 Under those conditions, naively shifting a fraction of demand into nominally
-“better” hours can **increase** total emissions.
+“better” hours can increase total emissions.
 
-This suggests that load shifting should **not** be applied as a static rule
+This suggests that load shifting **should not** be applied as a static rule
 (e.g., “always run appliances at night”), but instead be driven by **dynamic,
 day-ahead signals** based on actual forecasted intensity.
 
@@ -49,7 +49,7 @@ day-ahead signals** based on actual forecasted intensity.
 
 This analysis is explicitly scoped to:
 
-- A single high-usage household profile (~14 kWh/day)  
+- A single high-usage household profile (14 kWh/day)  
 - 30% flexible demand, representing appliances such as laundry, dishwashers,
   and some discretionary usage  
 - The 2024 UK grid, using historic carbon intensity and renewable mix
@@ -65,3 +65,7 @@ Key limitations:
 Despite these simplifications, the results are consistent with the physical
 behaviour of a decarbonising grid and provide a realistic upper-bound on the
 benefit of naïve household load shifting at current UK emission levels.
+
+### Running the Streamlit App
+
+Install dependencies:
