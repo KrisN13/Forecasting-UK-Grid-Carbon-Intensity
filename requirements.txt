@@ -1,1 +1,7 @@
-streamlit run streamlit_app.py
+streamlit
+pandas
+numpy
+scikit-learn
+pyarrow
+matplotlib
+seaborn
