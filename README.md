@@ -26,29 +26,29 @@ Pipeline:
         │  generation mix) │
         └─────────┬────────┘
                   │
-     ┌────────────▼─────────────┐
+     ┌────────────▼──────────────┐
      │   Data cleaning & merge   │
      │ (timestamps, resampling)  │
-     └────────────┬─────────────┘
+     └────────────┬──────────────┘
                   │
-     ┌────────────▼─────────────┐
+     ┌────────────▼──────────────┐
      │  Exploratory Data Analysis│
-     └────────────┬─────────────┘
+     └────────────┬──────────────┘
                   │
-     ┌────────────▼─────────────┐
+     ┌────────────▼──────────────┐
      │  Baseline models          │
      │  (t-1, t-24, t-168)       │
-     └────────────┬─────────────┘
+     └────────────┬──────────────┘
                   │
-     ┌────────────▼─────────────┐
+     ┌────────────▼──────────────┐
      │  HGB forecasting model    │
-     └────────────┬─────────────┘
+     └────────────┬──────────────┘
                   │
-     ┌────────────▼─────────────┐
+     ┌────────────▼──────────────┐
      │  Household scenario engine│
-     └────────────┬─────────────┘
+     └────────────┬──────────────┘
                   │
-     ┌────────────▼─────────────┐
+     ┌────────────▼──────────────┐
      │  Streamlit app            │
      └───────────────────────────┘
 
@@ -56,10 +56,10 @@ Pipeline:
 ### Structural insight: decarbonisation compresses the benefit of load shifting
 
 The analysis shows that domestic load shifting delivers modest but consistent
-CO₂ savings: ≈**1.6%** on an average day, and up to **5%** on the best days.
+CO₂ savings: **1.6%** on an average day, and up to **5%** on the best days.
 The key reason is structural rather than methodological:
 
-- In the modern UK grid (2020–2025), **renewables dominate low-carbon periods**  
+- In the modern UK grid (2020 - 2025), **renewables dominate low-carbon periods**  
 - As a result, the hours with the highest renewable share are essentially the same
   hours with the lowest carbon intensity  
 - This makes the **low_intensity** and **max_renewable** strategies almost indistinguishable
@@ -67,7 +67,7 @@ The key reason is structural rather than methodological:
 In earlier, coal- and gas-heavy years, the spread between high- and low-carbon hours
 was larger, and the theoretical benefit of shifting would have been higher. In that
 sense, the relatively small gains observed here are a symptom of progress:
-a cleaner, more stable grid leaves less “low-hanging fruit” for demand shifting.
+a cleaner, more stable grid leaves less low-hanging fruit for demand shifting.
 
 ### When shifting can make things worse
 
@@ -78,10 +78,10 @@ On some days:
 - The household load profile is out of phase with clean periods  
 
 Under those conditions, naively shifting a fraction of demand into nominally
-“better” hours can increase total emissions.
+'better' hours can increase total emissions.
 
 This suggests that load shifting **should not** be applied as a static rule
-(e.g., “always run appliances at night”), but instead be driven by **dynamic,
+(e.g., 'always run appliances at night'), but instead be driven by dynamic,
 day-ahead signals** based on actual forecasted intensity.
 
 **Key Results**
@@ -95,19 +95,19 @@ day-ahead signals** based on actual forecasted intensity.
 ![Actual vs Predicted Carbon Intensity](assets/ci_actual_vs_pred_feb2024.png)
 Two-week slice showing the model’s ability to follow real carbon intensity patterns.
 
-> The machine-learning model outperforms all baselines meaningfully, reducing error by **~32% vs naive**.
+The machine-learning model outperforms all baselines meaningfully, reducing error by **~32% vs naive**.
 
 ### **Scenario Analysis (Household CO₂ Impact)**
 
 Using:
 
 - **14 kWh/day** high-usage household  
-- **30% flexible load** (≈4.2 kWh)  
+- **30% flexible load** (4.2 kWh)  
 - Shifting into **4 cleanest hours** of each day  
 - Year: **2024**  
 
 ![Daily CO₂ Reduction Throughout 2024](assets/daily_reduction_2024.png)
-Daily CO₂ reduction under household load-shifting (2024). Most days show 1–2% savings, with best days reaching ~5% and occasional negative days when shifting increases emissions.
+Daily CO₂ reduction under household load-shifting (2024). Most days show 1–2% savings, with best days reaching around 5% and occasional negative days when shifting increases emissions.
 
 Results:
 
@@ -133,9 +133,9 @@ Because the modern UK grid (2020–2025) has:
 - high renewable penetration  
 - fewer deep fossil-fuel peaks  
 
-Small gradients → small opportunity for shifting.
+Small gradients = small opportunity for shifting.
 
-> Even so, a 1–2% reduction **per household** scales to hundreds of thousands of tonnes of CO₂ annually at the national level.
+Even so, a 1–2% reduction **per household** scales to hundreds of thousands of tonnes of CO₂ annually at the national level.
 
 ![Daily CO₂ Reduction Throughout 2024](assets/distribution_of_daily_CO2_2024.png)
 Distribution of daily CO₂ reductions. The distribution centers near 1.6%, with a right tail up towards 5% and a left tail down to -2.5%, demonstrating days when shifting increases emissions.
@@ -155,7 +155,7 @@ Some days see **higher emissions** after shifting:
 - Flat carbon intensity profiles  
 - Household load out of phase with clean hours  
 
-Dynamic signals are required — not static “off-peak” rules.
+Dynamic signals are required - not static 'off-peak' rules.
 
 ### Scope limitations
 
