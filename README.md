@@ -56,46 +56,118 @@ Pipeline:
 ### Structural insight: decarbonisation compresses the benefit of load shifting
 
 The analysis shows that domestic load shifting delivers modest but consistent
-CO₂ savings: **1.6%** on an average day, and up to **5%** on the best days.
+CO₂ savings for a standard high-usage household (14 kWh/day, 30% flexible load):
+
+- Mean daily reduction: **1.6%**
+- Best days: up to **5%**
+- Worst days: down to **–2.5%**
+
 The key reason is structural rather than methodological:
 
-- In the modern UK grid (2020 - 2025), **renewables dominate low-carbon periods**  
+- In the modern UK grid (2020 - 2025), **renewables dominate low-carbon periods**
 - As a result, the hours with the highest renewable share are essentially the same
-  hours with the lowest carbon intensity  
+  hours with the lowest carbon intensity
 - This makes the **low_intensity** and **max_renewable** strategies almost indistinguishable
+  for a standard household profile
 
 In earlier, coal- and gas-heavy years, the spread between high- and low-carbon hours
 was larger, and the theoretical benefit of shifting would have been higher. In that
 sense, the relatively small gains observed here are a symptom of progress:
-a cleaner, more stable grid leaves less low-hanging fruit for demand shifting.
+a cleaner, more stable grid leaves less 'low-hanging fruit' for demand shifting.
+
+### EV owner scenario: timing matters much more
+
+To reflect a more realistic modern energy profile, the analysis also includes
+an EV owner scenario. Here the household still uses 14 kWh/day, but adds
+an EV charging load of around 7 kWh/day, which is treated as highly flexible
+and constrained mainly to evening and night hours.
+
+Under the same grid conditions (2024) and with 30% flexible household load:
+
+- **Standard household (no EV, low_intensity strategy)**  
+  - Mean daily CO₂ reduction: **1.6%**  
+  - Best days: **5%**
+
+- **EV owner (7 kWh/day charging, low_intensity strategy)**  
+  – Mean daily CO₂ reduction: **10.5%**  
+  – Best days: above **20%**
+
+In other words, adding a realistic EV charging profile increases the
+average load-shifting benefit by roughly an order of magnitude. The reason
+is simple: EV charging is a large, highly flexible load that can be moved
+almost entirely into the cleanest hours.
+
+The strategy comparison is also revealing:
+
+- The **low_intensity** strategy (targeting the lowest carbon intensity hours)
+  delivers the highest mean reduction and never increases emissions in this EV setup.
+- The **max_renewable** strategy (targeting hours with the highest renewable share)
+  still works on average, but:
+  - has a lower mean reduction, and
+  - occasionally *increases* emissions on some days (down to –2.8%)
+
+This suggests that for large flexible loads like EV charging, it is more robust
+to **optimise directly for carbon intensity** than to chase 'high-renewables' periods
+as a proxy.
 
 ### When shifting can make things worse
 
-The presence of negative daily reductions (down to –2.5%) is not a modelling artefact.
-On some days:
+The presence of negative daily reductions in the standard household case
+(down to around –2.5%) is not a modelling artefact. On some days:
 
-- The carbon intensity curve is flat, or  
-- The household load profile is out of phase with clean periods  
+- The carbon intensity curve is flat, or
+- The household load profile is out of phase with clean periods
 
 Under those conditions, naively shifting a fraction of demand into nominally
 'better' hours can increase total emissions.
 
-This suggests that load shifting **should not** be applied as a static rule
-(e.g., 'always run appliances at night'), but instead be driven by dynamic,
-day-ahead signals** based on actual forecasted intensity.
+This is also visible in the EV scenario when using a max_renewable rule:
+on a minority of days, prioritising renewable share over actual carbon intensity
+misaligns the charging window with the true cleanest hours.
+
+Overall, this suggests that load shifting **should not** be applied as a static rule
+(e.g. 'always run appliances at night' or 'always charge when renewables are high'),
+but instead be driven by **dynamic, day-ahead signals** based on actual forecasted
+intensity.
+
+### Scope and limitations
+
+This analysis is explicitly scoped to:
+
+- A standard high-usage household profile (14 kWh/day)
+- An EV owner variant with an additional 7 kWh/day of flexible charging
+- 30% flexible demand on the household side, representing appliances such as
+  laundry, dishwashers, and some discretionary usage
+- The 2024 UK grid, using historic carbon intensity and renewable mix
+
+Key limitations:
+
+- No modelling of intraday behaviour changes (behavioural rebound is ignored)
+- No explicit treatment of network constraints or locational marginal emissions
+- Flexible share is assumed homogeneous and perfectly controllable
+- EV charging is simplified as a single, daily charging window
+- Shifting is evaluated day-by-day, not as part of a portfolio of households or
+  aggregated flexibility markets
+
+Despite these simplifications, the results are consistent with the physical
+behaviour of a decarbonising grid and provide a realistic comparison between:
+
+- modest, but consistent savings for a standard household, and
+- significantly larger savings for EV owners when charging is aligned with
+  the cleanest hours based on carbon intensity forecasts.
 
 **Key Results**
 ### **Forecasting**
 
-- Naive baseline (t-1): ~8.7 MAE  
-- Daily baseline (t-24): ~38 MAE  
-- Weekly baseline (t-168): ~56 MAE  
+- Naive baseline (t-1): 8.7 MAE  
+- Daily baseline (t-24): 38 MAE  
+- Weekly baseline (t-168): 56 MAE  
 - HGBRegressor: 5.9 MAE  
 
 ![Actual vs Predicted Carbon Intensity](assets/ci_actual_vs_pred_feb2024.png)
 Two-week slice showing the model’s ability to follow real carbon intensity patterns.
 
-The machine-learning model outperforms all baselines meaningfully, reducing error by **~32% vs naive**.
+The machine-learning model outperforms all baselines meaningfully, reducing error by **32% vs naive**.
 
 ### **Scenario Analysis (Household CO₂ Impact)**
 
@@ -115,7 +187,7 @@ Results:
 |-------------------------|-------|
 | **Mean daily reduction** | **1.65%** |
 | **Max daily reduction**  | **4.93%** |
-| **Min daily reduction**  | **–2.51%** |
+| **Min daily reduction**  | **-2.51%** |
 | **Strategies identical** | Yes |
 
 ### Why are both strategies identical?
@@ -174,6 +246,9 @@ Despite this, the model aligns with power-system behaviour and gives a realistic
 
 ![Try the app](assets/streamlit_app_overview.png)
 Interactive Streamlit application for exploring UK grid carbon intensity forecasts and household CO₂ reduction scenarios. Users can adjust dates, flexible load share, and demand settings to generate personalised results. The app opens automatically in your browser.
+
+Try the interactive app here:
+https://forecasting-uk-grid-carbon-intensity.streamlit.app/
 
 It allows users to:
 
