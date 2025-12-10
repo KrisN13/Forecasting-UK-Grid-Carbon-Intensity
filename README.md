@@ -76,7 +76,7 @@ Example performance on held-out test data:
 | Weekly baseline (t-168) |     56         |
 | HistGradientBoostingRegressor |  5.9     |
 
-The HGB model reduces error by roughly 30–35% relative to the naive baseline and captures the main structure of the carbon-intensity curve.
+The HGB model reduces error by roughly 30 - 35% relative to the naive baseline and captures the main structure of the carbon-intensity curve.
 
 ## Household Scenario Engine
 
