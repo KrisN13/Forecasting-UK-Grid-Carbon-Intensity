@@ -89,8 +89,8 @@ Under the same grid conditions (2024) and with 30% flexible household load:
   - Best days: **5%**
 
 - **EV owner (7 kWh/day charging, low_intensity strategy)**  
-  – Mean daily CO₂ reduction: **10.5%**  
-  – Best days: above **20%**
+  - Mean daily CO₂ reduction: **10.5%**  
+  - Best days: above **20%**
 
 In other words, adding a realistic EV charging profile increases the
 average load-shifting benefit by roughly an order of magnitude. The reason
@@ -190,16 +190,40 @@ Results:
 | **Min daily reduction**  | **-2.51%** |
 | **Strategies identical** | Yes |
 
+### EV Household Scenario (14 kWh/day + 7 kWh EV charging)
+
+To model a more realistic modern energy profile, a second scenario was added for
+an EV owner charging approximately 7 kWh/day. Because EV charging is a large and
+highly flexible load, shifting it into the cleanest hours has a significantly
+larger impact than in a standard household.
+
+**Key results (2024):**
+
+| Metric | Value |
+|--------|--------|
+| Mean daily reduction | **10.48%** |
+| Max daily reduction | **21.21%** |
+| Min daily reduction | **1.26%** |
+| Strategies identical | No - low_intensity performs better and is more consistent |
+
+**Interpretation:**  
+For EV owners, intelligent timing has an order-of-magnitude larger CO₂ impact.
+The low_intensity strategy is consistently beneficial, while the max_renewable
+strategy occasionally increases emissions.
+
+![Daily CO₂ reduction — EV Household (2024)](assets/daily_reduction_EV_2024.png)
+Daily CO₂ reductions for an EV owner (2024). Most days show 8 - 12% savings, with the cleanest days exceeding 20%.
+
 ### Why are both strategies identical?
 
 - The hours with the **lowest carbon intensity** are the same hours with the **highest renewable penetration**.
 - In a decarbonising grid, renewables shape the cleanest periods.
 - Therefore:  
-  **“Shift to renewable hours” = “Shift to low-carbon hours”**
+  **'Shift to renewable hours' = 'Shift to low-carbon hours'**
 
 ### Why are reductions modest?
 
-Because the modern UK grid (2020–2025) has:
+Because the modern UK grid (2020 - 2025) has:
 
 - flatter carbon intensity curves  
 - high renewable penetration  
@@ -207,7 +231,7 @@ Because the modern UK grid (2020–2025) has:
 
 Small gradients = small opportunity for shifting.
 
-Even so, a 1–2% reduction **per household** scales to hundreds of thousands of tonnes of CO₂ annually at the national level.
+Even so, a 1 - 2% reduction **per household** scales to hundreds of thousands of tonnes of CO₂ annually at the national level.
 
 ![Daily CO₂ Reduction Throughout 2024](assets/distribution_of_daily_CO2_2024.png)
 Distribution of daily CO₂ reductions. The distribution centers near 1.6%, with a right tail up towards 5% and a left tail down to -2.5%, demonstrating days when shifting increases emissions.
@@ -218,7 +242,7 @@ Distribution of daily CO₂ reductions. The distribution centers near 1.6%, with
 
 - Renewables dominate the cleanest periods  
 - The two strategies collapse into the same behaviour  
-- Grid is smoother → fewer “dirty peaks” → less advantage from timing shifts  
+- Grid is smoother → fewer 'dirty peaks' → less advantage from timing shifts  
 
 ### Negative savings
 
