@@ -6,3 +6,4 @@ data/samples/
 # Project Notes
 notes/
 *.tmp
+.cache.sqlite
