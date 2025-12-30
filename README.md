@@ -52,7 +52,7 @@ In code, this is split across notebooks:
 - `03b_weather_features_temperature`
 - `04_feature_engineering_and_models`
 - `05_scenarios_and_impact`
-- `streamlit_app.py` interactive application
+- `streamlit_app.py` (interactive application)
 
 ## Forecasting Models
 The forecasting stage uses:
@@ -158,7 +158,7 @@ The project includes a Streamlit app that uses the following steps:
 - View baseline vs shifted loads
 - View CO₂ reductions over time
 
-The app is built from `streamlit_app.py` and uses the cleaned parquet datasets from `01_creating_a_clean_carbon_intensity_dataset`.
+The app is built from `streamlit_app.py` and uses the cleaned parquet datasets from `01_creating_a_clean_carbon_intensity_dataset`.<br>
 [Try the Application](https://forecasting-uk-grid-carbon-intensity.streamlit.app/)
 
 ## Limitations
@@ -181,19 +181,19 @@ Potential next steps:
   - Simulating price-based behaviour
 
 ## How to Run
-1. Clone the repository:
-  `git clone https://github.com/KrisN13/Forecasting-UK-Grid-Carbon-Intensity.git`
+1. Clone the repository:<br>
+  `git clone https://github.com/KrisN13/Forecasting-UK-Grid-Carbon-Intensity.git`<br>
   `cd Forecasting-UK-Grid-Carbon-Intensity`
-2. Create and activate a Python environment, then install dependencies:
+2. Create and activate a Python environment, then install dependencies:<br>
   `pip install -r requirements.txt`
-3. Run notebooks in order for end-to-end analysis:
-  `01_creating_a_clean_carbon_intensity_dataset`
-  `02_data_exploration_carbon_intensity`
-  `03_baseline_models`
-  `03b_weather_features_temperature`
-  `04_feature_engineering_and_models`
-  `05_scenarios_and_impact`
-4. Launch the Streamlit app:
+3. Run notebooks in order for end-to-end analysis:<br>
+  `01_creating_a_clean_carbon_intensity_dataset`<br>
+  `02_data_exploration_carbon_intensity`<br>
+  `03_baseline_models`<br>
+  `03b_weather_features_temperature`<br>
+  `04_feature_engineering_and_models`<br>
+  `05_scenarios_and_impact`<br>
+4. Launch the Streamlit app:<br>
     `streamlit run streamlit_app.py`
 
 ## License
