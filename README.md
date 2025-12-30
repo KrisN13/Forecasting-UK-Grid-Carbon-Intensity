@@ -11,7 +11,7 @@ This project builds an end-to-end system to:
 The goal is to move beyond simple “off-peak is greener” rules and show, with real data, how much timed consumption actually matters.
 
 ## Motivation
-The UK power system is decarbonising quickly, but carbon intensity still varies hour by hour depending on the generation mix (renewables, gas, imports, etc.).
+The UK power system is trying to move away from the use of carbon, but carbon intensity still varies hour-by-hour, depending on the generation mix used (including: renewables, gas, imports, etc.).
 
 Questions this project answers:
 - How large are emission reductions from household load shifting in practice?
@@ -19,7 +19,7 @@ Questions this project answers:
 - How much larger is the effect for EV owners, where a large part of demand is genuinely flexible?
 - Can a simple forecast plus a scenario engine provide meaningful guidance?
 
-The project is written in Python, built around Jupyter notebooks, and published as a reproducible, portfolio-ready workflow.
+This project is written using Python programming in Jupyter notebooks, and is published as a workflow in GitHub.
 
 ## Data Sources
 Main datasets:
@@ -48,9 +48,11 @@ Simple pipeline:
 In code, this is split across notebooks:
 - `01_creating_a_clean_carbon_intensity_dataset`
 - `02_data_exploration_carbon_intensity`
-- `03_modeling_and_forecasting_ci`
-- `04_scenarios_and_impact`
-- `streamlit_app.py` (app wrapper)
+- `03_baseline_models`
+- `03b_weather_features_temperature`
+- `04_feature_engineering_and_models`
+- `05_scenarios_and_impact`
+- `streamlit_app.py` interactive application
 
 ## Forecasting Models
 The forecasting stage uses:
@@ -58,14 +60,13 @@ The forecasting stage uses:
   - Naive: previous hour (t-1)
   - Daily: same hour previous day (t-24)
   - Weekly: same hour previous week (t-168)
-- Machine learning model:
-  - HistGradientBoostingRegressor (HGB), using:
-    - Lagged carbon intensity
-    - Rolling means
-    - Calendar features (hour, day of week, month)
-    - Generation-mix features (e.g. SOLAR_lag1, WIND_lag1, RENEWABLE_lag1, etc.)
+- Machine learning model of HistGradientBoostingRegressor (HGB), using:
+  - Lagged carbon intensity
+  - Rolling means
+  - Timeline features; time/hour, day of week, month
+  - Generation-mix (e.g. SOLAR_lag, WIND_lag, RENEWABLE_lag, etc.)
 
-Example performance on held-out test data:
+Example performance of test data:
 
 | Model                   | MAE (gCO₂/kWh) |
 |-------------------------|----------------|
@@ -80,14 +81,14 @@ The HGB model reduces error by roughly 30 - 35% relative to the naive baseline a
 
 The scenario engine is built on three main components:
 1. A realistic household load profile:
-   - High-usage household: 14 kWh/day
-   - 30% of demand treated as flexible (appliances such as laundry, dishwasher, some discretionary use)
-   - Fixed shape over the day (night/morning/day/evening weights)
+   - High-usage = 14 kWh/day
+   - 30% of demand is flexible which includes the use of appliances such as laundry machine, dishwasher, electric shower, etc.
+   - Fixed shape over the day (morning/daytime/evening/night weights)
 
 2. A strategy for choosing target hours:
    - `low_intensity`: choose hours with the lowest carbon intensity
    - `max_renewable`: choose hours with highest renewable share
-   - Both strategies operate on day-level information
+   - Both strategies operate on daily information
 
 3. A flexible-load redistribution step:
    - Compute total flexible energy for the day
@@ -95,9 +96,9 @@ The scenario engine is built on three main components:
    - Keep total daily energy constant
    - Recompute CO₂ emissions before and after shifting
 
-The engine runs over a full year (2024), producing a daily series of relative CO₂ reductions for each strategy.
+The scenario runs over a full year (2024), showing daily CO₂ reductions for each chosen strategy.
 
-## Results: Standard Household (14 kWh/day, 30% Flexible Load)
+## Results: Standard Household (14 kWh/day with a 30% Flexible Load)
 For the standard household, no EV load is included (EV disabled).
 
 Two strategies:
@@ -112,10 +113,10 @@ Summary for 2024:
 | max_renewable   | 8.94   | 4.49  | -2.75   | 21.11   | 366    |
 
 Interpretation:
-- Using forecasted carbon intensity directly (low_intensity) yields an average daily CO₂ reduction of around 10 - 11%
+- Using forecasted carbon (low_intensity) shows an average daily CO₂ reduction of around 10 - 11%
 - On the cleanest days, reductions exceed 20% while preserving total energy use
 - The max_renewable strategy is weaker on average and has a non-trivial number of days where emissions increase (down to about −2.8%)
-- Renewable share is not a perfect proxy for carbon intensity: high renewable share can coincide with relatively high emissions when balancing or backup generation is active
+- Renewable share is not perfect, however, high renewable share can correspond with relatively high emissions when balancing, or when backup generation is active
 
 ## Results: EV Household (14 kWh/day + 7 kWh EV Charging)
 A second profile models a household with an EV:
@@ -134,7 +135,7 @@ Interpretation:
 
 - Adding EV charging roughly doubles the achievable emission reductions because a large block of demand is highly flexible
 - Under low_intensity, the EV household can reach daily reductions above 40%, with a mean of around 20%
-- max_renewable still performs reasonably on average but is riskier, with some days where emissions are significantly higher than baseline (around −9%)
+- max_renewable still performs reasonably on average but is riskier, with some days where emissions are significantly higher than the baseline (around −9%)
 - The results highlight the importance of optimising directly for carbon intensity, especially when large flexible loads like EV charging are involved
 
 ## Why These Reductions Are Plausible
@@ -148,56 +149,52 @@ For a standard household, this compresses the potential gains from shifting: the
 For an EV household, the situation is different: 7 kWh/day of EV charging is a large load that can be moved almost entirely into the cleanest hours, which is why daily reductions can exceed 40% on the best days.
 
 ## Streamlit App
-The project includes a Streamlit app that exposes the core logic:
-- Select date ranges
-- Visualise actual and predicted carbon intensity
-- Configure household daily consumption
-- Adjust flexible share
-- Toggle EV charging and set daily EV kWh
-- Choose strategy (`low_intensity` vs `max_renewable`)
-- View baseline vs shifted load profiles
+The project includes a Streamlit app that uses the following steps:
+- Select a date range
+- Visualise both predicted and actual carbon intensity data
+- Configure household consumption
+- Adjust amount of flexible hours
+- Choose desired strategy of either low intensity or maximum renewable energy
+- View baseline vs shifted loads
 - View CO₂ reductions over time
 
-The app is built from `streamlit_app.py` and uses the cleaned parquet datasets and precomputed predictions.
+The app is built from `streamlit_app.py` and uses the cleaned parquet datasets from `01_creating_a_clean_carbon_intensity_dataset`.
+[Try the Application](https://forecasting-uk-grid-carbon-intensity.streamlit.app/)
 
 ## Limitations
 Current limitations include:
-- Single national carbon-intensity signal (no locational marginal emissions)
-- Only two household profiles:
-  - High-usage household
-  - High-usage household with EV
-- Fixed flexible share (30% for the household, 100% for EV)
+- Single national carbon-intensity signal (no locational distinctions)
+- Only two household profiles
 - No behavioural modelling (no rebound, comfort constraints, or non-compliance)
-- No explicit price-based optimisation (carbon-only objective)
+- No explicit price-based optimisation
 
-Temperature was evaluated as a variable and provided a small but consistent improvement, confirming that near-term carbon intensity is driven primarily by system inertia and supply composition.
-
-Despite these limitations, the results are internally consistent and align with the expected behaviour of a decarbonising grid with moderate intraday variation.
+Temperature was added and provided a small improvement, confirming that short-term carbon intensity is driven primarily by system inertia and supply composition. Despite these limitations, the results are consistent and align with the expected behaviours of a decarbonising grid with moderate activity.
 
 ## Future Work
 Potential next steps:
-- Add additional household profiles (for example, electric heating)
+- Add additional household profiles (e.g. electric heating, solar panels)
 - Compare HistGradientBoostingRegressor with gradient boosting libraries such as LightGBM or XGBoost
-- Use explainability tools (e.g. SHAP) to understand feature contributions
-- Implement multi-day ahead forecasts with uncertainty intervals
-- Extend the scenario engine to:
-  - Combine multiple households
-  - Simulate price-based behaviour
-  - Explore aggregated flexibility potential
+- Use explainability tools to understand feature contributions
+- Implement multiple day ahead forecasts with uncertainty intervals
+- Extend the scenario to include:
+  - Combining multiple households
+  - Simulating price-based behaviour
 
 ## How to Run
 1. Clone the repository:
-   git clone https://github.com/KrisN13/Forecasting-UK-Grid-Carbon-Intensity.git
-   cd Forecasting-UK-Grid-Carbon-Intensity
+  `git clone https://github.com/KrisN13/Forecasting-UK-Grid-Carbon-Intensity.git`
+  `cd Forecasting-UK-Grid-Carbon-Intensity`
 2. Create and activate a Python environment, then install dependencies:
-    pip install -r requirements.txt
+  `pip install -r requirements.txt`
 3. Run notebooks in order for end-to-end analysis:
-    01_creating_a_clean_carbon_intensity_dataset
-    02_data_exploration_carbon_intensity
-    03_modeling_and_forecasting_ci
-    04_scenarios_and_impact
+  `01_creating_a_clean_carbon_intensity_dataset`
+  `02_data_exploration_carbon_intensity`
+  `03_baseline_models`
+  `03b_weather_features_temperature`
+  `04_feature_engineering_and_models`
+  `05_scenarios_and_impact`
 4. Launch the Streamlit app:
-    streamlit run streamlit_app.py
+    `streamlit run streamlit_app.py`
 
 ## License
-This project is released under the MIT License.
+This project uses the MIT License.

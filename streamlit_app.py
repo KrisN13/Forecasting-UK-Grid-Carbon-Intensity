@@ -154,7 +154,7 @@ def main():
     This tool simulates how shifting flexible household electricity usage into 
     lower-carbon hours changes daily CO₂ emissions.
 
-    **Data:** UK Grid Generation Mix & Carbon Intensity (2020–2025)  
+    **Data:** UK Grid Generation Mix & Carbon Intensity (2020 to 2025)  
     **Models:** Gradient Boosting (HGBRegressor) + baseline benchmarks  
     **Scenarios:** Low-carbon hours vs high-renewable hours  
     """)
@@ -216,11 +216,11 @@ def main():
         max_value=8,
         value=4,
         step=1,
-        help="How many of the best hours to concentrate shifted load into.",
+        help="How many hours to concentrate the shifted load into.",
     )
 
     st.sidebar.markdown("---")
-    st.sidebar.caption("Data: UK grid carbon intensity & generation mix, 2020–2025")
+    st.sidebar.caption("Data: UK grid carbon intensity & generation mix, 2020 to 2025")
 
     # Fetch day data
     try:
@@ -230,7 +230,7 @@ def main():
             source_label = "Historical carbon intensity"
         else:
             ci_day = df_preds.loc[date_str, "CI_pred"]
-            source_label = "Model-predicted carbon intensity"
+            source_label = "Model predicted carbon intensity"
 
         renewable_share_day = compute_renewable_share(df_day_carbon)
 
@@ -317,11 +317,17 @@ def main():
     # Build combined legend
     lines, labels = ax2.get_legend_handles_labels()
     bars, bar_labels = ax3.get_legend_handles_labels()
-    ax2.legend(lines + bars, labels + bar_labels, loc="upper right")
+    ax2.legend(lines + bars, labels + bar_labels)
+    for label in ax2.get_xticklabels():
+        label.set_rotation(45)
+        label.set_ha("right")
 
-    plt.xticks(rotation=45)
-    plt.tight_layout()
+    for label in ax3.get_xticklabels():
+        label.set_rotation(45)
+        label.set_ha("right")
 
+    fig2.tight_layout()
+    
     st.pyplot(fig1)
     st.pyplot(fig2)
 
