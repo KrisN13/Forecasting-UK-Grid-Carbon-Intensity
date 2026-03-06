@@ -10,6 +10,10 @@ This project builds an end-to-end system to:
 
 The goal is to move beyond simple “off-peak is greener” rules and show, with real data, how much timed consumption actually matters.
 
+<a href="https://forecasting-uk-grid-carbon-intensity.streamlit.app/">
+  <img src="https://github.com/KrisN13/Forecasting-UK-Grid-Carbon-Intensity/blob/main/assets/streamlit_app_overview.png" alt="Application Dashboard" width="700"/>
+</a>
+
 ## Motivation
 The UK power system is trying to move away from the use of carbon, but carbon intensity still varies hour-by-hour, depending on the generation mix used (including: renewables, gas, imports, etc.).
 
