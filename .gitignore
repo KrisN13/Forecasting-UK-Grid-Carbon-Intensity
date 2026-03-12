@@ -7,4 +7,4 @@ data/samples/
 notes/
 *.tmp
 .cache.sqlite
-.netcr
+.netc
