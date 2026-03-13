@@ -9,3 +9,11 @@ notes/
 .cache.sqlite
 .netc
 **/__pycache__/
+# Data
+*.parquet
+data/
+notebooks/data/
+
+# OS Metadata
+*:Zone.Identifier
+.DS_Store
