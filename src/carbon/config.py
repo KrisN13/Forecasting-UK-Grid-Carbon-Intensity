@@ -7,18 +7,16 @@ Edit paths and constants here rather than inside individual modules.
 
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Data paths  (override via environment variables or pass explicitly)
-# ---------------------------------------------------------------------------
-DATA_DIR = Path("data")
+_ROOT = Path(__file__).resolve().parents[2]
 
-PROCESSED_DIR  = DATA_DIR / "processed"
+DATA_DIR        = _ROOT / "data"
+PROCESSED_DIR   = DATA_DIR / "processed"
 PREDICTIONS_DIR = DATA_DIR / "predictions"
-ASSETS_DIR      = Path("assets")
+ASSETS_DIR      = _ROOT / "assets"
 
-CARBON_PARQUET  = PROCESSED_DIR / "df_carbon.parquet"
-TEMP_PARQUET    = PROCESSED_DIR / "uk_temp_hourly.parquet"
-PREDS_PARQUET   = PREDICTIONS_DIR / "ci_predictions.parquet"
+CARBON_PARQUET = PROCESSED_DIR / "df_carbon.parquet"
+TEMP_PARQUET   = PROCESSED_DIR / "uk_temp_hourly.parquet"
+PREDS_PARQUET  = PREDICTIONS_DIR / "ci_predictions.parquet"
 
 # ---------------------------------------------------------------------------
 # Dataset date range
