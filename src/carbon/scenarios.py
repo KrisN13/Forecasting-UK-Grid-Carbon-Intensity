@@ -19,15 +19,21 @@ Public API
 
 from __future__ import annotations
 
-import numpy as np
+import datetime
+import logging
+
 import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+DateLike = str | datetime.date | pd.Timestamp
 
 # ---------------------------------------------------------------------------
 # Load profile generators
 # ---------------------------------------------------------------------------
 
 def generate_household_load(
-    date,
+    date: DateLike,
     daily_kwh: float = 14.0,
 ) -> pd.Series:
     """
@@ -69,7 +75,7 @@ def generate_household_load(
 
 
 def generate_ev_load(
-    date,
+    date: DateLike,
     daily_ev_kwh: float = 0.0,
 ) -> pd.Series:
     """
@@ -97,7 +103,7 @@ def generate_ev_load(
 
 
 def generate_total_load(
-    date,
+    date: DateLike,
     base_kwh: float = 14.0,
     ev_kwh:   float = 0.0,
 ) -> tuple[pd.Series, pd.Series, pd.Series]:
@@ -394,7 +400,8 @@ def compute_daily_reductions_over_range(
                     "strategy": strategy,
                     "reduction": res["relative_reduction"],
                 })
-        except Exception:
+        except (ValueError, KeyError) as e:
+            logger.debug(f"Skipping {date_str}: {e}")
             continue  # skip incomplete days
 
     return pd.DataFrame(records).set_index("date")

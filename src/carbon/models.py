@@ -20,12 +20,14 @@ Public API
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
+from sklearn.base import RegressorMixin
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.inspection import permutation_importance
 from sklearn.linear_model import Ridge
@@ -34,6 +36,8 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error
 from .config import HGB_PARAMS, RIDGE_ALPHA, PREDS_PARQUET
 
 DEFAULT_QUANTILES = (0.1, 0.5, 0.9)
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -87,7 +91,7 @@ def train_hgb_quantiles(
     fitted = {}
     for q in quantiles:
         label = f"q{int(q * 100)}"
-        print(f"  Training HGB quantile={q} ({label})...")
+        logger.info(f"Training HGB quantile={q} ({label})...")
         params = {**HGB_PARAMS, "loss": "quantile", "quantile": q, **kwargs}
         model = HistGradientBoostingRegressor(**params)
         model.fit(X_train, y_train)
@@ -119,7 +123,7 @@ def _metrics(y_true: pd.Series, y_pred: np.ndarray) -> tuple[float, float]:
 
 def evaluate_model(
     name:    str,
-    model,
+    model:   RegressorMixin,
     X_train: pd.DataFrame,
     y_train: pd.Series,
     X_val:   pd.DataFrame,
@@ -146,10 +150,10 @@ def evaluate_model(
     }
 
     if verbose:
-        print(f"\n=== {name} ===")
-        print(f"  Train : MAE={mae_tr:.2f}  RMSE={rmse_tr:.2f}")
-        print(f"  Val   : MAE={mae_val:.2f}  RMSE={rmse_val:.2f}")
-        print(f"  Test  : MAE={mae_te:.2f}  RMSE={rmse_te:.2f}")
+        logger.info(f"=== {name} ===")
+        logger.info(f"  Train : MAE={mae_tr:.2f}  RMSE={rmse_tr:.2f}")
+        logger.info(f"  Val   : MAE={mae_val:.2f}  RMSE={rmse_val:.2f}")
+        logger.info(f"  Test  : MAE={mae_te:.2f}  RMSE={rmse_te:.2f}")
 
     return results
 
@@ -159,7 +163,7 @@ def evaluate_interval_coverage(
     q_low:    str = "CI_pred_q10",
     q_high:   str = "CI_pred_q90",
     actual:   str = "CI_actual",
-) -> dict[str, float]:
+) -> dict[str, float | None]:
     """
     Evaluate the empirical coverage of a prediction interval.
 
@@ -181,7 +185,7 @@ def evaluate_interval_coverage(
         lo = int(q_low.split("q")[-1])
         hi = int(q_high.split("q")[-1])
         target = (hi - lo) / 100
-    except Exception:
+    except (ValueError, IndexError):
         target = None
 
     result = {
@@ -190,8 +194,8 @@ def evaluate_interval_coverage(
         "target_coverage": target,
     }
 
-    print(f"Interval coverage : {coverage:.1%}  (target: {target:.0%})")
-    print(f"Mean interval width: {mean_width:.1f} gCO2/kWh")
+    logger.info(f"Interval coverage : {coverage:.1%}  (target: {target:.0%})")
+    logger.info(f"Mean interval width: {mean_width:.1f} gCO2/kWh")
 
     return result
 
@@ -206,7 +210,7 @@ def summarise_results(results_list: list[dict]) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 def build_predictions_df(
-    model,
+    model:   RegressorMixin,
     X:       pd.DataFrame,
     y:       pd.Series,
     X_train: pd.DataFrame,
@@ -271,7 +275,7 @@ def build_quantile_predictions_df(
 # ---------------------------------------------------------------------------
 
 def feature_importance(
-    model,
+    model:        RegressorMixin,
     X_test:       pd.DataFrame,
     y_test:       pd.Series,
     n_repeats:    int = 10,
@@ -309,7 +313,7 @@ def save_predictions(
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     df_preds.to_parquet(path)
-    print(f"Predictions saved -> {path}")
+    logger.info(f"Predictions saved -> {path}")
 
 
 def load_predictions(path: str | Path = PREDS_PARQUET) -> pd.DataFrame:

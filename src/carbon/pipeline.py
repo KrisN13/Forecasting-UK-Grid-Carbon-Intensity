@@ -30,6 +30,7 @@ Usage
 
 from __future__ import annotations
 
+import logging
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -83,6 +84,8 @@ ZERO_CARBON_FUELS = {"WIND", "HYDRO", "SOLAR"}
 
 # Renewable fuels (for RENEWABLE column)
 RENEWABLE_FUELS = {"WIND", "HYDRO", "SOLAR", "BIOMASS"}
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -304,29 +307,29 @@ def update_carbon_parquet(
 
     if last_ts is None:
         fetch_start = start
-        print(f"No existing data — backfilling from {start}")
+        logger.info(f"No existing data — backfilling from {start}")
     else:
         fetch_start = (last_ts + pd.Timedelta(hours=1)).strftime("%Y-%m-%dT%H:%MZ")
-        print(f"Last record: {last_ts}  — fetching new records from {fetch_start}")
+        logger.info(f"Last record: {last_ts}  — fetching new records from {fetch_start}")
 
     fetch_end = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
 
     if pd.Timestamp(fetch_start, tz="UTC") >= pd.Timestamp(fetch_end, tz="UTC"):
-        print("Already up to date.")
+        logger.info("Already up to date.")
         return pd.read_parquet(path)
 
-    print("Fetching carbon intensity...")
+    logger.info("Fetching carbon intensity...")
     df_intensity = fetch_carbon_intensity(fetch_start, fetch_end)
 
-    print("Fetching generation mix...")
+    logger.info("Fetching generation mix...")
     df_mix = fetch_generation_mix(fetch_start, fetch_end)
 
     if df_intensity.empty or df_mix.empty:
-        print("No new data returned from API.")
+        logger.warning("No new data returned from API.")
         return pd.read_parquet(path) if path.exists() else pd.DataFrame()
 
     df_new = _build_carbon_dataframe(df_intensity, df_mix)
-    print(f"  {len(df_new):,} new hourly records")
+    logger.info(f"  {len(df_new):,} new hourly records")
 
     if last_ts is not None:
         df_existing = pd.read_parquet(path)
@@ -337,7 +340,7 @@ def update_carbon_parquet(
         df_combined = df_new
 
     df_combined.to_parquet(path)
-    print(f"Saved → {path}  ({len(df_combined):,} total rows)")
+    logger.info(f"Saved → {path}  ({len(df_combined):,} total rows)")
     return df_combined
 
 
@@ -360,20 +363,20 @@ def update_temperature_parquet(
 
     if last_ts is None:
         fetch_start = start
-        print(f"No existing temperature data — backfilling from {start}")
+        logger.info(f"No existing temperature data — backfilling from {start}")
     else:
         fetch_start = (last_ts + pd.Timedelta(hours=1)).strftime("%Y-%m-%d")
-        print(f"Last temperature record: {last_ts}  — fetching from {fetch_start}")
+        logger.info(f"Last temperature record: {last_ts}  — fetching from {fetch_start}")
 
     fetch_end = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     if pd.Timestamp(fetch_start) >= pd.Timestamp(fetch_end):
-        print("Temperature data already up to date.")
+        logger.info("Temperature data already up to date.")
         return pd.read_parquet(path)
 
-    print("Fetching temperature from Open-Meteo...")
+    logger.info("Fetching temperature from Open-Meteo...")
     df_new = fetch_temperature(fetch_start, fetch_end)
-    print(f"  {len(df_new):,} new hourly temperature records")
+    logger.info(f"  {len(df_new):,} new hourly temperature records")
 
     if last_ts is not None:
         df_existing = pd.read_parquet(path)
@@ -384,7 +387,7 @@ def update_temperature_parquet(
         df_combined = df_new
 
     df_combined.to_parquet(path)
-    print(f"Saved → {path}  ({len(df_combined):,} total rows)")
+    logger.info(f"Saved → {path}  ({len(df_combined):,} total rows)")
     return df_combined
 
 
@@ -405,15 +408,12 @@ def update_all(start: str = PIPELINE_START) -> None:
     >>> from carbon.pipeline import update_all
     >>> update_all()
     """
-    print("=" * 50)
-    print("Carbon Intensity Pipeline")
-    print("=" * 50)
+    logger.info("=== Carbon Intensity Pipeline ===")
     update_carbon_parquet(start=start)
-    print()
     update_temperature_parquet(start=start)
-    print()
-    print("Pipeline complete.")
+    logger.info("Pipeline complete.")
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
     update_all()

@@ -18,7 +18,6 @@ Public API
 from __future__ import annotations
 
 import pandas as pd
-import numpy as np
 
 from .config import (
     TARGET_COL,

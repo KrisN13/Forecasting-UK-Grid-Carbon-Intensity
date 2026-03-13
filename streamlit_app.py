@@ -1,8 +1,18 @@
+import sys
+import os
 import pandas as pd
 import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
 
+# Add src to path so we can import the carbon package
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+
+from carbon.scenarios import (
+    run_shift_scenario,
+    get_day_slice,
+    compute_renewable_share
+)
 
 # =========================
 # Data loading and caching
@@ -27,115 +37,6 @@ def load_data():
     available_dates = pd.to_datetime(df_preds.index.date).unique()
 
     return df_carbon, df_preds, available_dates
-
-
-# =========================
-# Helper functions
-# =========================
-
-HOUSEHOLD_PROFILE_RAW = np.array([
-    0.25, 0.23, 0.22, 0.22, 0.25,        # 00–04
-    0.35, 0.55, 0.65, 0.60,              # 05–08
-    0.55, 0.50, 0.48, 0.47, 0.50, 0.55,  # 09–14
-    0.60, 0.75, 1.10, 1.20, 1.05,        # 15–19
-    0.70, 0.55, 0.40, 0.30               # 20–23
-])
-
-
-def make_household_profile(daily_kwh: float = 14.0) -> pd.Series:
-    """Return 24-element Series of hourly kWh, scaled to daily_kwh."""
-    raw = HOUSEHOLD_PROFILE_RAW.astype(float)
-    scale = daily_kwh / raw.sum()
-    return pd.Series(raw * scale, index=range(24))
-
-
-def compute_renewable_share(df_day: pd.DataFrame) -> pd.Series:
-    """RENEWABLE / GENERATION, clipped between 0 and 1."""
-    share = df_day["RENEWABLE"] / df_day["GENERATION"]
-    return share.clip(lower=0.0, upper=1.0)
-
-
-def get_day_slice(df: pd.DataFrame, date_str: str) -> pd.DataFrame:
-    """Return 24h slice for a given YYYY-MM-DD."""
-    day_df = df.loc[date_str:date_str]
-    if len(day_df) != 24:
-        raise ValueError(f"Expected 24 rows for {date_str}, got {len(day_df)}")
-    return day_df
-
-
-def run_shift_scenario(
-    ci_series: pd.Series,
-    daily_kwh: float = 14.0,
-    flexible_share: float = 0.3,
-    strategy: str = "low_intensity",
-    renewable_share: pd.Series | None = None,
-    n_target_hours: int = 4,
-) -> dict:
-    """
-    Run a load-shifting scenario for a single day.
-
-    strategy: "low_intensity" or "max_renewable"
-    """
-    ci_series = ci_series.sort_index()
-    if len(ci_series) != 24:
-        raise ValueError(f"ci_series must contain exactly 24 hourly values, got {len(ci_series)}")
-
-    index = ci_series.index
-
-    if strategy == "max_renewable":
-        if renewable_share is None:
-            raise ValueError("renewable_share is required for 'max_renewable' strategy")
-        renewable_share = renewable_share.loc[index].sort_index()
-
-    # Baseline load profile aligned to timestamps
-    base_profile = make_household_profile(daily_kwh)
-    baseline_load = pd.Series(base_profile.values, index=index)
-
-    # Split into non-flexible and flexible components
-    nonflex_load = baseline_load * (1.0 - flexible_share)
-    flex_load = baseline_load * flexible_share
-    total_flex_energy = flex_load.sum()
-
-    # Choose target hours
-    if strategy == "low_intensity":
-        sort_key = ci_series
-        target_hours = sort_key.sort_values(ascending=True).index[:n_target_hours]
-    elif strategy == "max_renewable":
-        sort_key = renewable_share
-        target_hours = sort_key.sort_values(ascending=False).index[:n_target_hours]
-    else:
-        raise ValueError("strategy must be 'low_intensity' or 'max_renewable'")
-
-    # Allocate flex energy evenly into target hours
-    shifted_flex = pd.Series(0.0, index=index)
-    per_hour = total_flex_energy / len(target_hours)
-    for ts in target_hours:
-        shifted_flex[ts] += per_hour
-
-    shifted_load = nonflex_load + shifted_flex
-
-    # Emissions (gCO2) = kWh * gCO2/kWh
-    ci_array = ci_series.values
-    baseline_emissions = baseline_load.values * ci_array
-    shifted_emissions = shifted_load.values * ci_array
-
-    total_baseline_emissions = baseline_emissions.sum()
-    total_shifted_emissions = shifted_emissions.sum()
-    relative_reduction = (
-        (total_baseline_emissions - total_shifted_emissions) / total_baseline_emissions
-    )
-
-    return {
-        "index": index,
-        "ci": ci_array,
-        "baseline_load": baseline_load.values,
-        "shifted_load": shifted_load.values,
-        "baseline_emissions": baseline_emissions,
-        "shifted_emissions": shifted_emissions,
-        "total_baseline_emissions": total_baseline_emissions,
-        "total_shifted_emissions": total_shifted_emissions,
-        "relative_reduction": relative_reduction,
-    }
 
 
 # =========================
@@ -235,102 +136,73 @@ def main():
         renewable_share_day = compute_renewable_share(df_day_carbon)
 
     except Exception as e:
-        st.error(f"Could not load a complete day for {date_str}: {e}")
+        st.error(f"Could not load a complete day of data for {date_str}. ({e})")
         return
 
     # Run scenario
-    scenario = run_shift_scenario(
-        ci_series=ci_day,
-        daily_kwh=daily_kwh,
-        flexible_share=flexible_share,
-        strategy=strategy,
-        renewable_share=renewable_share_day,
-        n_target_hours=n_target_hours,
-    )
+    try:
+        # Note: The package run_shift_scenario accepts base_kwh (legacy: daily_kwh)
+        results = run_shift_scenario(
+            ci_series=ci_day,
+            renewable_share=renewable_share_day,
+            daily_kwh=daily_kwh,
+            flexible_share=flexible_share,
+            strategy=strategy,
+            n_target_hours=n_target_hours,
+        )
+    except Exception as e:
+        st.error(f"Scenario failed: {e}")
+        return
 
-    # =========================
     # Metrics
-    # =========================
-
     col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.metric(
-            "Total baseline emissions",
-            f"{scenario['total_baseline_emissions']:.0f} gCO₂",
-        )
-    with col2:
-        st.metric(
-            "Total shifted emissions",
-            f"{scenario['total_shifted_emissions']:.0f} gCO₂",
-        )
-    with col3:
-        st.metric(
-            "Relative reduction",
-            f"{scenario['relative_reduction'] * 100:.2f} %",
-        )
-
-    st.caption(
-        f"{source_label} · Strategy: {strategy_label.lower()} · "
-        f"Daily load: {daily_kwh:.1f} kWh · Flexible: {flexible_share*100:.0f}%"
-    )
-
-    # =========================
-    # Plots
-    # =========================
-    idx = scenario["index"]
-    hours = [ts.strftime("%H:%M") for ts in idx]
-
-    # Plot 1: Load before/after
-    fig1, ax1 = plt.subplots(figsize=(10, 4))
-    ax1.plot(hours, scenario["baseline_load"], label="Baseline load", marker="o")
-    ax1.plot(hours, scenario["shifted_load"], label="Shifted load", marker="o")
-    ax1.set_ylabel("Load (kWh)")
-    ax1.set_xlabel("Hour of day")
-    ax1.set_title("Household load before and after shifting")
-    ax1.legend()
-    plt.xticks(rotation=45)
-    plt.tight_layout()
-
-    # Plot 2: Carbon intensity & emissions
-    fig2, ax2 = plt.subplots(figsize=(10, 4))
-    ax2.plot(hours, scenario["ci"], label="Carbon intensity (gCO₂/kWh)", marker="o")
-    ax2.set_ylabel("gCO₂/kWh")
-    ax2.set_xlabel("Hour of day")
-    ax2.set_title("Carbon intensity profile")
-
-    ax3 = ax2.twinx()
-    ax3.bar(
-        hours,
-        scenario["baseline_emissions"],
-        alpha=0.3,
-        label="Baseline emissions",
-    )
-    ax3.bar(
-        hours,
-        scenario["shifted_emissions"],
-        alpha=0.3,
-        label="Shifted emissions",
-    )
-    ax3.set_ylabel("Emissions (gCO₂)")
-
-    # Build combined legend
-    lines, labels = ax2.get_legend_handles_labels()
-    bars, bar_labels = ax3.get_legend_handles_labels()
-    ax2.legend(lines + bars, labels + bar_labels)
-    for label in ax2.get_xticklabels():
-        label.set_rotation(45)
-        label.set_ha("right")
-
-    for label in ax3.get_xticklabels():
-        label.set_rotation(45)
-        label.set_ha("right")
-
-    fig2.tight_layout()
     
-    st.pyplot(fig1)
-    st.pyplot(fig2)
+    baseline_co2 = results["total_baseline_emissions"]
+    shifted_co2 = results["total_shifted_emissions"]
+    reduction_pct = results["relative_reduction"] * 100.0
+    
+    with col1:
+        st.metric("Baseline Emissions", f"{baseline_co2:.0f} gCO₂")
+    with col2:
+        st.metric("Shifted Emissions", f"{shifted_co2:.0f} gCO₂")
+    with col3:
+        st.metric("Reduction", f"{reduction_pct:.2f}%", delta_color="normal")
 
+    # Plots
+    fig, ax = plt.subplots(figsize=(10, 5))
+    
+    hours = results["index"].hour
+    
+    ax.plot(hours, results["baseline_load"], label="Baseline Load (kWh)", linestyle="--", alpha=0.7)
+    ax.plot(hours, results["shifted_load"], label="Shifted Load (kWh)", linewidth=2)
+    
+    # Twin axis for Carbon Intensity
+    ax2 = ax.twinx()
+    ax2.plot(hours, results["ci"], color="grey", alpha=0.3, label="Carbon Intensity (gCO2/kWh)")
+    ax2.fill_between(hours, results["ci"], color="grey", alpha=0.1)
+    
+    ax.set_xlabel("Hour of Day")
+    ax.set_ylabel("Load (kWh)")
+    ax2.set_ylabel("Carbon Intensity (gCO2/kWh)")
+    ax.set_title(f"Load Shifting Scenario: {date_str} ({source_label})")
+    
+    lines, labels = ax.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax.legend(lines + lines2, labels + labels2, loc="upper left")
+    
+    st.pyplot(fig)
+
+    # Show data
+    with st.expander("See detailed data"):
+        df_display = pd.DataFrame({
+            "Hour": results["index"],
+            "Carbon Intensity": results["ci"],
+            "Baseline Load": results["baseline_load"],
+            "Shifted Load": results["shifted_load"],
+            "Baseline Emissions": results["baseline_emissions"],
+            "Shifted Emissions": results["shifted_emissions"],
+        })
+        st.dataframe(df_display)
 
 if __name__ == "__main__":
     main()
