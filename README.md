@@ -155,6 +155,8 @@ For a standard household, this compresses the potential gains from shifting: the
 
 For an EV household, the situation is different: 7 kWh/day of EV charging is a large load that can be moved almost entirely into the cleanest hours, which is why daily reductions can exceed 40% on the best days.
 
+The `max_renewable` strategy can increase emissions when compared to the baseline because renewable share is an imperfect alternative for carbon intensity. Even during hours of high renewable output, fossil fuel generation is likely still operating in the background to balance the grid against demand spikes or sudden drops in wind and solar. This means high renewable share does not guarantee low emissions, however, the two metrics are correlated but not equivalent. The `low_intensity` strategy avoids this by targeting the carbon signal directly.
+
 ## Streamlit App
 The project includes a Streamlit app that allows users to:
 - Select a date range
