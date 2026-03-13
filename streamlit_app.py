@@ -3,7 +3,8 @@ import os
 import pandas as pd
 import numpy as np
 import streamlit as st
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 # Add src to path so we can import the carbon package
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
@@ -28,6 +29,13 @@ def load_data():
     df_preds = pd.read_parquet("data/predictions/ci_predictions.parquet")
     df_preds = df_preds.sort_index()
 
+    # Load feature importance
+    fi_path = "data/predictions/feature_importance.parquet"
+    if os.path.exists(fi_path):
+        df_fi = pd.read_parquet(fi_path).sort_values("importance", ascending=True)
+    else:
+        df_fi = None
+
     # Align on common hourly index to avoid surprises
     common_idx = df_preds.index.intersection(df_carbon.index)
     df_carbon = df_carbon.loc[common_idx]
@@ -36,7 +44,7 @@ def load_data():
     # Available dates for the selector
     available_dates = pd.to_datetime(df_preds.index.date).unique()
 
-    return df_carbon, df_preds, available_dates
+    return df_carbon, df_preds, available_dates, df_fi
 
 
 # =========================
@@ -56,13 +64,13 @@ def main():
     lower-carbon hours changes daily CO₂ emissions.
 
     **Data:** UK Grid Generation Mix & Carbon Intensity (2020 to 2025)  
-    **Models:** Gradient Boosting (HGBRegressor) + baseline benchmarks  
+    **Models:** Gradient Boosting (HGBRegressor) with Probabilistic Forecasting (q10/q50/q90)  
     **Scenarios:** Low-carbon hours vs high-renewable hours  
     """)
 
     st.title("UK Grid Carbon Intensity – Household Load Shifting Simulator")
 
-    df_carbon, df_preds, available_dates = load_data()
+    df_carbon, df_preds, available_dates, df_fi = load_data()
 
     # Sidebar controls
     st.sidebar.header("Scenario settings")
@@ -83,7 +91,7 @@ def main():
 
     ci_source = st.sidebar.radio(
         "Carbon intensity source",
-        ["Historical (actual)", "Model prediction"],
+        ["Historical (actual)", "Model prediction (with uncertainty)"],
         index=0,
     )
 
@@ -96,10 +104,11 @@ def main():
 
     daily_kwh = st.sidebar.slider(
         "Daily household consumption (kWh)",
-        min_value=5.0,
-        max_value=30.0,
-        value=14.0,
-        step=0.5,
+        min_value=2.0,
+        max_value=20.0,
+        value=8.5,
+        step=0.1,
+        help="Default 8.5 kWh/day based on BEIS/Elexon UK average (approx. 7.5-10 kWh).",
     )
 
     flexible_share = st.sidebar.slider(
@@ -126,12 +135,18 @@ def main():
     # Fetch day data
     try:
         df_day_carbon = get_day_slice(df_carbon, date_str)
+        q10 = None
+        q90 = None
+        
         if ci_source.startswith("Historical"):
             ci_day = df_preds.loc[date_str, "CI_actual"]
             source_label = "Historical carbon intensity"
         else:
-            ci_day = df_preds.loc[date_str, "CI_pred"]
-            source_label = "Model predicted carbon intensity"
+            # Use Median (q50) for prediction and capture q10/q90 for uncertainty
+            ci_day = df_preds.loc[date_str, "CI_pred_q50"]
+            q10 = df_preds.loc[date_str, "CI_pred_q10"]
+            q90 = df_preds.loc[date_str, "CI_pred_q90"]
+            source_label = "Model predicted carbon intensity (q50)"
 
         renewable_share_day = compute_renewable_share(df_day_carbon)
 
@@ -141,7 +156,6 @@ def main():
 
     # Run scenario
     try:
-        # Note: The package run_shift_scenario accepts base_kwh (legacy: daily_kwh)
         results = run_shift_scenario(
             ci_series=ci_day,
             renewable_share=renewable_share_day,
@@ -168,29 +182,57 @@ def main():
     with col3:
         st.metric("Reduction", f"{reduction_pct:.2f}%", delta_color="normal")
 
-    # Plots
-    fig, ax = plt.subplots(figsize=(10, 5))
+    # Interactive Plotly chart
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
     
     hours = results["index"].hour
     
-    ax.plot(hours, results["baseline_load"], label="Baseline Load (kWh)", linestyle="--", alpha=0.7)
-    ax.plot(hours, results["shifted_load"], label="Shifted Load (kWh)", linewidth=2)
+    # Add load profiles
+    fig.add_trace(
+        go.Scatter(x=hours, y=results["baseline_load"], name="Baseline Load (kWh)", 
+                   line=dict(dash='dash', color='blue', width=2), opacity=0.6),
+        secondary_y=False,
+    )
+    fig.add_trace(
+        go.Scatter(x=hours, y=results["shifted_load"], name="Shifted Load (kWh)", 
+                   line=dict(color='blue', width=4)),
+        secondary_y=False,
+    )
     
-    # Twin axis for Carbon Intensity
-    ax2 = ax.twinx()
-    ax2.plot(hours, results["ci"], color="grey", alpha=0.3, label="Carbon Intensity (gCO2/kWh)")
-    ax2.fill_between(hours, results["ci"], color="grey", alpha=0.1)
+    # Add Carbon Intensity
+    if q10 is not None and q90 is not None:
+        # Prediction interval
+        fig.add_trace(
+            go.Scatter(
+                x=list(hours) + list(hours)[::-1],
+                y=list(q90) + list(q10)[::-1],
+                fill='toself',
+                fillcolor='rgba(128, 128, 128, 0.2)',
+                line=dict(color='rgba(255,255,255,0)'),
+                hoverinfo="skip",
+                showlegend=True,
+                name="Prediction Interval (q10-q90)"
+            ),
+            secondary_y=True,
+        )
+        
+    fig.add_trace(
+        go.Scatter(x=hours, y=results["ci"], name="Carbon Intensity (gCO₂/kWh)", 
+                   line=dict(color='grey', width=2), fill='tozeroy', fillcolor='rgba(128, 128, 128, 0.1)'),
+        secondary_y=True,
+    )
     
-    ax.set_xlabel("Hour of Day")
-    ax.set_ylabel("Load (kWh)")
-    ax2.set_ylabel("Carbon Intensity (gCO2/kWh)")
-    ax.set_title(f"Load Shifting Scenario: {date_str} ({source_label})")
+    fig.update_layout(
+        title_text=f"Load Shifting Scenario: {date_str} ({source_label})",
+        hovermode="x unified",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+    )
     
-    lines, labels = ax.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax.legend(lines + lines2, labels + labels2, loc="upper left")
+    fig.update_xaxes(title_text="Hour of Day", tickmode='linear', tick0=0, dtick=1)
+    fig.update_yaxes(title_text="Load (kWh)", secondary_y=False)
+    fig.update_yaxes(title_text="Carbon Intensity (gCO₂/kWh)", secondary_y=True)
     
-    st.pyplot(fig)
+    st.plotly_chart(fig, use_container_width=True)
 
     # Show data
     with st.expander("See detailed data"):
@@ -202,7 +244,34 @@ def main():
             "Baseline Emissions": results["baseline_emissions"],
             "Shifted Emissions": results["shifted_emissions"],
         })
+        if q10 is not None:
+            df_display["CI_q10"] = q10.values
+            df_display["CI_q90"] = q90.values
+            
         st.dataframe(df_display)
+
+    # Feature Importance Section
+    if df_fi is not None:
+        st.markdown("---")
+        st.subheader("Model Insights: Feature Importance")
+        st.markdown("""
+        How much does each feature contribute to the carbon intensity forecast? 
+        Calculated using **permutation importance** on the test set (neg. MAE).
+        """)
+        
+        fig_fi = go.Figure(go.Bar(
+            x=df_fi["importance"],
+            y=df_fi["feature"],
+            orientation='h',
+            marker_color='blue'
+        ))
+        fig_fi.update_layout(
+            height=600,
+            margin=dict(l=20, r=20, t=20, b=20),
+            xaxis_title="Importance (Change in MAE)",
+            yaxis_title="Feature"
+        )
+        st.plotly_chart(fig_fi, use_container_width=True)
 
 if __name__ == "__main__":
     main()

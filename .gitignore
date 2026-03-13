@@ -1,4 +1,7 @@
 .ipynb_checkpoints/
+.venv/
+scripts/
+
 # Raw data
 data/raw/
 # Sampled Datasets
@@ -9,9 +12,16 @@ notes/
 .cache.sqlite
 .netc
 **/__pycache__/
+
 # Data
 *.parquet
 data/
+!data/processed/
+!data/predictions/
+data/processed/*
+data/predictions/*
+!data/processed/.gitkeep
+!data/predictions/.gitkeep
 notebooks/data/
 
 # OS Metadata

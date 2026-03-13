@@ -115,10 +115,19 @@ def train_ridge(
 # Evaluation
 # ---------------------------------------------------------------------------
 
-def _metrics(y_true: pd.Series, y_pred: np.ndarray) -> tuple[float, float]:
+def _metrics(y_true: pd.Series, y_pred: np.ndarray) -> tuple[float, float, float]:
+    """
+    Compute MAE, RMSE and MAPE.
+    
+    A small epsilon (1e-6) is added to y_true in MAPE to avoid division by zero.
+    """
     mae  = mean_absolute_error(y_true, y_pred)
     rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
-    return mae, rmse
+    
+    # MAPE: Mean Absolute Percentage Error
+    mape = np.mean(np.abs((y_true - y_pred) / (y_true + 1e-6))) * 100.0
+    
+    return mae, rmse, mape
 
 
 def evaluate_model(
@@ -135,25 +144,25 @@ def evaluate_model(
     """
     Evaluate a fitted model on train / val / test splits.
 
-    Returns a dictionary of MAE and RMSE for each split, plus the model
+    Returns a dictionary of MAE, RMSE and MAPE for each split, plus the model
     name, suitable for collecting results across multiple models.
     """
-    mae_tr,  rmse_tr  = _metrics(y_train, model.predict(X_train))
-    mae_val, rmse_val = _metrics(y_val,   model.predict(X_val))
-    mae_te,  rmse_te  = _metrics(y_test,  model.predict(X_test))
+    mae_tr,  rmse_tr,  mape_tr  = _metrics(y_train, model.predict(X_train))
+    mae_val, rmse_val, mape_val = _metrics(y_val,   model.predict(X_val))
+    mae_te,  rmse_te,  mape_te  = _metrics(y_test,  model.predict(X_test))
 
     results = {
         "name":    name,
-        "mae_tr":  mae_tr,  "rmse_tr":  rmse_tr,
-        "mae_val": mae_val, "rmse_val": rmse_val,
-        "mae_te":  mae_te,  "rmse_te":  rmse_te,
+        "mae_tr":  mae_tr,  "rmse_tr":  rmse_tr,  "mape_tr":  mape_tr,
+        "mae_val": mae_val, "rmse_val": rmse_val, "mape_val": mape_val,
+        "mae_te":  mae_te,  "rmse_te":  rmse_te,  "mape_te":  mape_te,
     }
 
     if verbose:
         logger.info(f"=== {name} ===")
-        logger.info(f"  Train : MAE={mae_tr:.2f}  RMSE={rmse_tr:.2f}")
-        logger.info(f"  Val   : MAE={mae_val:.2f}  RMSE={rmse_val:.2f}")
-        logger.info(f"  Test  : MAE={mae_te:.2f}  RMSE={rmse_te:.2f}")
+        logger.info(f"  Train : MAE={mae_tr:.2f}  RMSE={rmse_tr:.2f}  MAPE={mape_tr:.2f}%")
+        logger.info(f"  Val   : MAE={mae_val:.2f}  RMSE={rmse_val:.2f}  MAPE={mape_val:.2f}%")
+        logger.info(f"  Test  : MAE={mae_te:.2f}  RMSE={rmse_te:.2f}  MAPE={mape_te:.2f}%")
 
     return results
 

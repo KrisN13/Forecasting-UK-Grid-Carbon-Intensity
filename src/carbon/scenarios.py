@@ -34,7 +34,7 @@ DateLike = str | datetime.date | pd.Timestamp
 
 def generate_household_load(
     date: DateLike,
-    daily_kwh: float = 14.0,
+    daily_kwh: float = 8.5,
 ) -> pd.Series:
     """
     Baseline hourly household load profile for a single UTC day.
@@ -104,7 +104,7 @@ def generate_ev_load(
 
 def generate_total_load(
     date: DateLike,
-    base_kwh: float = 14.0,
+    base_kwh: float = 8.5,
     ev_kwh:   float = 0.0,
 ) -> tuple[pd.Series, pd.Series, pd.Series]:
     """
@@ -199,7 +199,7 @@ def run_shift_scenario(
     ci_series=None,
     renewable_share=None,
     strategy: str = "low_intensity",
-    base_kwh: float = 14.0,
+    base_kwh: float = 8.5,
     daily_kwh: float | None = None,   # alias → base_kwh
     flexible_share: float = 0.30,
     ev_kwh: float = 0.0,
@@ -216,7 +216,7 @@ def run_shift_scenario(
             date=pd.Timestamp("2024-03-05", tz="UTC"),
             ci_day_df=df_carbon.loc["2024-03-05"],
             strategy="low_intensity",
-            base_kwh=14.0,
+            base_kwh=8.5,
             flexible_share=0.3,
             ev_kwh=7.0,
         )
@@ -226,7 +226,7 @@ def run_shift_scenario(
         run_shift_scenario(
             ci_series=ci_actual_day,
             renewable_share=renewable_share_day,
-            daily_kwh=14.0,
+            daily_kwh=8.5,
             flexible_share=0.3,
             strategy="low_intensity",
         )
@@ -354,7 +354,7 @@ def compute_daily_reductions_over_range(
     df_carbon:  pd.DataFrame,
     df_preds:   pd.DataFrame,
     flexible_share:  float = 0.3,
-    daily_kwh:       float = 14.0,
+    daily_kwh:       float = 8.5,
     ev_kwh:          float = 0.0,
     strategy_list:   tuple = ("low_intensity", "max_renewable"),
 ) -> pd.DataFrame:

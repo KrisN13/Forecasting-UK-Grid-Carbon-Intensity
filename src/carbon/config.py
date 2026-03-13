@@ -56,6 +56,10 @@ TEMP_COLS_TO_DROP = [
 # ---------------------------------------------------------------------------
 # Model hyperparameters
 # ---------------------------------------------------------------------------
+# HGB_PARAMS based on manual grid search (see notebook 04).
+# max_depth=8 provides a balance between capturing complex interactions 
+# (e.g., wind vs. time-of-day) and avoiding overfitting on 2024 validation data.
+# learning_rate=0.05 and max_iter=300 ensure stable convergence with HGB.
 HGB_PARAMS = dict(
     max_depth=8,
     learning_rate=0.05,
