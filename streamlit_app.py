@@ -36,13 +36,11 @@ def load_data():
     else:
         df_fi = None
 
-    # Align on common hourly index to avoid surprises
-    common_idx = df_preds.index.intersection(df_carbon.index)
-    df_carbon = df_carbon.loc[common_idx]
-    df_preds = df_preds.loc[common_idx]
+    # Extend predictions to the full carbon data range (new dates will be NaN)
+    df_preds = df_preds.reindex(df_carbon.index)
 
-    # Available dates for the selector
-    available_dates = pd.to_datetime(df_preds.index.date).unique()
+    # Available dates come from carbon data (updated in real-time)
+    available_dates = pd.to_datetime(df_carbon.index.date).unique()
 
     return df_carbon, df_preds, available_dates, df_fi
 
@@ -63,7 +61,7 @@ def main():
     This tool simulates how shifting flexible household electricity usage into 
     lower-carbon hours changes daily CO₂ emissions.
 
-    **Data:** UK Grid Generation Mix & Carbon Intensity (2020 to 2025)  
+    **Data:** UK Grid Generation Mix & Carbon Intensity (2020 to present)
     **Models:** Gradient Boosting (HGBRegressor) with Probabilistic Forecasting (q10/q50/q90)  
     **Scenarios:** Low-carbon hours vs high-renewable hours  
     """)
@@ -130,7 +128,7 @@ def main():
     )
 
     st.sidebar.markdown("---")
-    st.sidebar.caption("Data: UK grid carbon intensity & generation mix, 2020 to 2025")
+    st.sidebar.caption("Data: UK grid carbon intensity & generation mix, 2020 to present")
 
     # Fetch day data
     try:
@@ -138,7 +136,14 @@ def main():
         q10 = None
         q90 = None
         
-        if ci_source.startswith("Historical"):
+        preds_available = not df_preds.loc[date_str, "CI_pred_q50"].isna().all()
+
+        if ci_source.startswith("Historical") or not preds_available:
+            if not preds_available and not ci_source.startswith("Historical"):
+                st.warning(
+                    f"Model predictions are not available for {date_str} "
+                    "(beyond the trained model's range). Showing historical actuals instead."
+                )
             ci_day = df_preds.loc[date_str, "CI_actual"]
             source_label = "Historical carbon intensity"
         else:

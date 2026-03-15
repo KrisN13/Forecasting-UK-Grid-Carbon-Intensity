@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"2025-09-30\\\\|2024-02-05\\\\|date_input\\\\|min_date\\\\|max_date\\\\|date.*picker\" /home/krist/Documents/projects/Carbon --include=\"*.py\" --include=\"*.json\" 2>/dev/null | head -30)",
+      "Bash(grep -r \"2020-01-01\\\\|2025-09-30\\\\|date range\\\\|Data.*2020\\\\|Data.*2025\" /home/krist/Documents/projects/Carbon --include=\"*.py\" --include=\"*.md\" 2>/dev/null | grep -v \".ipynb_checkpoints\" | head -20)"
+    ]
+  }
+}

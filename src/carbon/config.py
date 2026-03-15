@@ -22,7 +22,7 @@ PREDS_PARQUET  = PREDICTIONS_DIR / "ci_predictions.parquet"
 # Dataset date range
 # ---------------------------------------------------------------------------
 TRAIN_START = "2020-01-01"
-DATA_CUTOFF = "2025-09-30 23:00:00"   # last available temperature record
+DATA_CUTOFF = "2025-09-30 23:00:00"   # training cutoff (last temp record at model-train time)
 
 TRAIN_YEARS = (2020, 2023)
 VAL_YEAR    = 2024
