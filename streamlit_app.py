@@ -20,20 +20,18 @@ from carbon.scenarios import (
 
 @st.cache_data
 def load_data():
-    df_carbon = pd.read_parquet("../data/processed/df_carbon.parquet")
+    df_carbon = pd.read_parquet("data/processed/df_carbon.parquet")
     df_carbon = df_carbon.sort_index()
     df_carbon = df_carbon.asfreq("H")
     df_carbon = df_carbon[df_carbon.index >= "2020-01-01"]
 
-    df_preds = pd.read_parquet("../data/predictions/ci_predictions.parquet")
+    df_preds = pd.read_parquet("data/predictions/ci_predictions.parquet")
     df_preds = df_preds.sort_index()
 
-    # Align on common hourly index to avoid surprises
     common_idx = df_preds.index.intersection(df_carbon.index)
     df_carbon = df_carbon.loc[common_idx]
     df_preds = df_preds.loc[common_idx]
 
-    # Available dates for the selector
     available_dates = pd.to_datetime(df_preds.index.date).unique()
 
     return df_carbon, df_preds, available_dates
