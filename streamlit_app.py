@@ -4,6 +4,37 @@ import pandas as pd
 import numpy as np
 import streamlit as st
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+
+# ── Site colour palette (krisnoondata.com green theme) ───────────────────────
+G_DEEP  = "#1c3a2a"
+G_MID   = "#2a5040"
+G_PANEL = "#243d2f"
+CREAM   = "#f5eedc"
+CREAM_D = "#c4b99a"
+GOLD    = "#c8a84b"
+TEAL    = "#7eb8a4"
+GRID    = "#3d5c47"
+BORDER  = "#3d5c47"
+
+mpl.rcParams.update({
+    "figure.facecolor":  G_PANEL,
+    "axes.facecolor":    G_PANEL,
+    "savefig.facecolor": G_PANEL,
+    "text.color":        CREAM,
+    "axes.labelcolor":   GOLD,
+    "axes.titlecolor":   CREAM,
+    "xtick.color":       CREAM_D,
+    "ytick.color":       CREAM_D,
+    "axes.edgecolor":    GRID,
+    "axes.linewidth":    0.8,
+    "grid.color":        GRID,
+    "grid.alpha":        0.5,
+    "legend.facecolor":  G_MID,
+    "legend.edgecolor":  BORDER,
+    "legend.labelcolor": CREAM_D,
+    "figure.dpi":        130,
+})
 
 # Add src to path so we can import the carbon package
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
@@ -47,6 +78,25 @@ def main():
         page_title="UK Grid Carbon Intensity – Household Shifting",
         layout="wide",
     )
+
+    st.markdown(f"""
+    <style>
+      html, body, [class*="css"] {{
+        background-color: {G_DEEP};
+        color: {CREAM};
+        font-family: 'DM Mono', monospace;
+      }}
+      section[data-testid="stSidebar"] {{
+        background-color: {G_MID};
+      }}
+      section[data-testid="stSidebar"] * {{ color: {CREAM} !important; }}
+      .stMetric label {{ color: {CREAM_D} !important; font-size: 11px; }}
+      .stMetric [data-testid="metric-container"] {{ background: {G_PANEL}; border-top: 2px solid {GOLD}; padding: 12px 16px; border-radius: 2px; }}
+      h1, h2, h3 {{ color: {CREAM} !important; }}
+      .stMarkdown a {{ color: {GOLD}; }}
+      #MainMenu, footer, header {{ visibility: hidden; }}
+    </style>
+    """, unsafe_allow_html=True)
 
     st.markdown("""
     ### UK Carbon Intensity Forecasting & Household Impact
@@ -169,26 +219,37 @@ def main():
 
     # Plots
     fig, ax = plt.subplots(figsize=(10, 5))
-    
+
     hours = results["index"].hour
-    
-    ax.plot(hours, results["baseline_load"], label="Baseline Load (kWh)", linestyle="--", alpha=0.7)
-    ax.plot(hours, results["shifted_load"], label="Shifted Load (kWh)", linewidth=2)
-    
-    # Twin axis for Carbon Intensity
+
+    # Carbon intensity as a filled background band — cream at low opacity
     ax2 = ax.twinx()
-    ax2.plot(hours, results["ci"], color="grey", alpha=0.3, label="Carbon Intensity (gCO2/kWh)")
-    ax2.fill_between(hours, results["ci"], color="grey", alpha=0.1)
-    
+    ax2.fill_between(hours, results["ci"], color=CREAM, alpha=0.06, zorder=0)
+    ax2.plot(hours, results["ci"], color=CREAM_D, alpha=0.5, linewidth=1,
+             linestyle=":", label="Carbon Intensity (gCO₂/kWh)", zorder=1)
+    ax2.set_ylabel("Carbon Intensity (gCO₂/kWh)", color=CREAM_D)
+    ax2.tick_params(axis="y", colors=CREAM_D)
+    ax2.spines["right"].set_color(GRID)
+    ax2.spines["left"].set_color(GRID)
+    ax2.spines["top"].set_color(GRID)
+    ax2.spines["bottom"].set_color(GRID)
+
+    # Load lines — teal for baseline, gold for shifted
+    ax.plot(hours, results["baseline_load"], label="Baseline Load (kWh)",
+            color=TEAL, linestyle="--", linewidth=1.8, alpha=0.85, zorder=3)
+    ax.plot(hours, results["shifted_load"],  label="Shifted Load (kWh)",
+            color=GOLD, linewidth=2.2, zorder=4)
+
     ax.set_xlabel("Hour of Day")
     ax.set_ylabel("Load (kWh)")
-    ax2.set_ylabel("Carbon Intensity (gCO2/kWh)")
     ax.set_title(f"Load Shifting Scenario: {date_str} ({source_label})")
-    
+    ax.set_xlim(0, 23)
+    ax.grid(True, axis="y")
+
     lines, labels = ax.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax.legend(lines + lines2, labels + labels2, loc="upper left")
-    
+
     st.pyplot(fig)
 
     # Show data
